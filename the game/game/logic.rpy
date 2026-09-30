@@ -50,7 +50,7 @@ init python:
             self.dirty_axe = 1.0 #полностью грязный топор
             self.clean_progress = 0.0 # прогресс очистки, 1.0 - полностью чисты
             self.mouse_pressed = False #держит ли тряпку мышкой
-            self.clean_amount = 0.003 #очистка за один вызов
+            self.clean_amount = 0.005 #очистка за один вызов (в илеале 0.0008)
 
             self.axe_image = Image("dirty_axe.png")
             self.axe_width, self.axe_height = renpy.image_size(
@@ -82,6 +82,12 @@ init python:
 
             self.clean_progress += self.clean_amount
 
+            if self.clean_progress < 0.65:
+                self.result = 'bad'
+
+            if self.clean_progress >= 0.65 and self.clean_progress < 1:
+                self.result = 'medium'
+
             if self.clean_progress >= 1:
                 self.finish('good')
                 return True
@@ -93,7 +99,8 @@ init python:
             self.mouse_pressed = False
 
         
-        #проверяет находится ли тряпочка над топором
+        #проверяет находится ли тряпочка над непрозрачными 
+        #пикселями топора
         def napkin_over_axe(self, napkin):
             axe_x, axe_y, axe_width, axe_height = self.axe_area
 
@@ -107,6 +114,6 @@ init python:
                 napkin.y
             ): 
                 return True
-            
+
 
 

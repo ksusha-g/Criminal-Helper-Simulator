@@ -30,13 +30,34 @@ label clean_game:
         False
     )
 
-    $ clean_weapon = CleanWeapon(clean_weapon_task, (400, 200, 450, 500))
+    $ clean_weapon = CleanWeapon(clean_weapon_task, (400, 250, 450, 500))
     call screen clean_weapon_screen(clean_weapon)
 
-    menu:
-        "Вернуться":
-            jump start
-            
+    if _return == 'exit':
+        if clean_weapon.result == 'bad':
+            'Топор плохо очищен'
 
+            menu:
+                "Вернуться к прилавку":
+                    jump start
+                "Попробовать снова":
+                    jump clean_game
+
+        if clean_weapon.result == 'medium':
+            'Топор очищен средне'
+
+            menu:
+                "Вернуться к прилавку":
+                    jump start
+                "Попробовать снова":
+                    jump clean_game
+
+            
+    if clean_weapon.result == 'good':
+        'Торор идеально очищен'
+
+        menu:
+            "Вернуться к прилавку":
+                jump start
 
     return
