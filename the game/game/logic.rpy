@@ -47,25 +47,37 @@ init python:
             super().__init__(task)
 
             self.axe_area = axe_area # область топора
-            self.dirty_axe = 1.0
+            self.dirty_axe = 1.0 #полностью грязный топор
             self.clean_progress = 0.0 # прогресс очистки, 1.0 - полностью чисты
             self.mouse_pressed = False #держит ли тряпку мышкой
-            self.clean_amount = 0.005 #на осколько очищается топор за один вызов
+            self.clean_amount = 0.003 #очистка за один вызов
+
+            self.axe_image = Image("dirty_axe.png")
+            self.axe_width, self.axe_height = renpy.image_size(
+                self.axe_image
+            )
             
 
         @property
         def dirty_alpha(self): #прозрачность грязного топора
             return self.dirty_axe - self.clean_progress
 
+
         #вызываем в момент, когда игрок нажал на тряпочку   
         def start_drag(self, drags):
             self.mouse_pressed = True
 
+
         #вызываем во время движения мышкой
         def update_drag(self, drags):
-    
+            napkin = drags[0]
+
+            #на всякий случай проверяем нажатие
+            if not self.mouse_pressed:
+                return
+
             #условие: тряпочка находится над топором
-            if not self.napkin_over_axe(drags[0]):
+            if not self.napkin_over_axe(napkin):
                 return
 
             self.clean_progress += self.clean_amount
@@ -75,23 +87,26 @@ init python:
                 return True
 
             renpy.restart_interaction()
-            print(self.clean_progress)
             
 
         def finish_drag(self, drags, drop):
             self.mouse_pressed = False
 
+        
+        #проверяет находится ли тряпочка над топором
         def napkin_over_axe(self, napkin):
             axe_x, axe_y, axe_width, axe_height = self.axe_area
 
-            axe_right = axe_x + axe_width
-            axe_bottom = axe_y + axe_height
-
-            return (napkin.x < axe_right
-                    and napkin.x > axe_x
-                    and napkin.y < axe_bottom
-                    and napkin.y > axe_y)
-
-
+            if renpy.is_pixel_opaque(
+                self.axe_image,
+                self.axe_width,
+                self.axe_height,
+                0.0,
+                0.0,
+                napkin.x,
+                napkin.y
+            ): 
+                return True
+            
 
 
