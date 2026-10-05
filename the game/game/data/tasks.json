@@ -1,0 +1,8 @@
+{
+    "clean_weapon": {
+        "minigame_type": "clean_weapon",
+        "payment": 100,
+        "reputation": 5,
+        "persuade": false
+    }
+}
