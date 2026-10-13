@@ -21,6 +21,8 @@ init python:
             self.client_generator = Client_generator(clients)
 
         def can_start_day(self):
+            if self.player.reputation < -5:
+                return False
             return True
 
         def start_day(self):
@@ -47,6 +49,16 @@ init python:
                 self.start_day()
             
             return False
+
+        def apply_task_result(self, task, result):
+            
+            if result == 'good':
+                self.player.earn(task.payment)
+                self.player.change_reputation(task.reputation)
+            elif result == 'medium':
+                self.player.earn(task.payment//2)
+            elif result == 'bad':
+                self.player.change_reputation(-task.reputation//2)
 
     class Day:
 
@@ -120,6 +132,12 @@ init python:
         def change_reputation(self, amount): #смена репутации
             self.reputation += amount
 
+        def get_money(self):
+            return f'{self.money}'
+
+        def get_reputation(self):
+            return f'{self.reputation}'
+
 
     class Task:
         def __init__(self, minigame_type, payment, reputation, persuade):
@@ -130,10 +148,11 @@ init python:
 
 
     class Client:
-        def __init__(self, name, image, phrase, comments, tasks):
+        def __init__(self, name, image, phrase, reject, comments, tasks):
             self.name = name #имя клиента
             self.image = image #картинка клиента
             self.phrase = phrase # речь клиента
+            self.reject = reject #речь клиента при отказе выполнения задания
             self.comments = comments # комментарии к выполнению задания
             self.tasks = tasks  #список доступных заданий
 
@@ -156,24 +175,26 @@ init python:
 
     class CleanWeapon(MiniGame):
 
-        def __init__(self, task, axe_area):
+        def __init__(self, task, weapon_area):
             super().__init__(task)
 
-            self.axe_area = axe_area # область топора
-            self.dirty_axe = 1.0 #полностью грязный топор
+            self.weapon_area = weapon_area # область топора
+            self.dirty_weapon = 1.0 #полностью грязный топор
             self.clean_progress = 0.0 # прогресс очистки, 1.0 - полностью чисты
             self.mouse_pressed = False #держит ли тряпку мышкой
-            self.clean_amount = 0.005 #очистка за один вызов (в илеале 0.0008)
+            self.clean_amount = 0.0008 #очистка за один вызов (в илеале 0.0008)
 
             self.axe_image = Image("dirty_axe.png")
-            self.axe_width, self.axe_height = renpy.image_size(
+            self.weapon_width, self.weapon_height = renpy.image_size(
                 self.axe_image
             )
+
+            self.result = 'bad' #результат мини-игры по умолчанию
             
 
         @property
         def dirty_alpha(self): #прозрачность грязного топора
-            return self.dirty_axe - self.clean_progress
+            return self.dirty_weapon - self.clean_progress
 
 
         #вызываем в момент, когда игрок нажал на тряпочку   
@@ -190,7 +211,7 @@ init python:
                 return
 
             #условие: тряпочка находится над топором
-            if not self.napkin_over_axe(napkin):
+            if not self.napkin_over_weapon(napkin):
                 return
             
             if self.clean_progress <= 1.0:
@@ -213,14 +234,14 @@ init python:
 
         
         #проверяет находится ли тряпочка над непрозрачными 
-        #пикселями топора
-        def napkin_over_axe(self, napkin):
-            axe_x, axe_y, axe_width, axe_height = self.axe_area
+        #пикселями оружия
+        def napkin_over_weapon(self, napkin):
+            weapon_x, weapon_y, weapon_width, weapon_height = self.weapon_area
 
             if renpy.is_pixel_opaque(
                 self.axe_image,
-                self.axe_width,
-                self.axe_height,
+                self.weapon_width,
+                self.weapon_height,
                 0.0,
                 0.0,
                 napkin.x,
@@ -269,6 +290,7 @@ init python:
                     image = client_data["image"],
                     phrase = client_data["phrase"],
                     comments = client_data["comments"],
+                    reject = client_data["reject"],
                     tasks = client_tasks
                 )
 
