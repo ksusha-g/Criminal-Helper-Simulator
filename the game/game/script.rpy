@@ -10,6 +10,7 @@ define e = Character(
 )
 image background = im.Scale("background.webp", 1920, 1080)
 image table = im.Scale('table.png', 1920, 1080)
+image newspaper = im.Scale('newspaper.png', 1920, 1080)
 
 default game_data = None
 default game = None
@@ -24,6 +25,11 @@ label start:
     'Добро пожаловать в игру!'
 
     jump new_day
+
+label close_market:
+    scene background
+    'Вы проиграли. Ваша репутация слишком низкая.'
+    return
 
 label new_day:
     scene background
@@ -45,6 +51,7 @@ label client_interaction:
     scene background
     show expression game.current_day.current_client.image as character at client_size
     show table
+    show newspaper
     show screen states
 
     e '[game.current_day.current_client.phrase]'
@@ -53,11 +60,14 @@ label client_interaction:
         "Помочь":
             jump clean_game
         "Отказать":
-            e 'ну и ладно!'
+            e '[game.current_day.current_client.reject]'
             jump next_client
 
 label next_client:
     $ game.current_day.finish_client()
+
+    if player.reputation < -5:
+        jump close_market
 
     if game.current_day.is_finished:
         jump finish_day
@@ -67,7 +77,9 @@ label next_client:
 label clean_game:
     hide character
     hide table
+    hide newspaper
     hide background
+    hide screen states
 
     $ clean_weapon_task = Task(
         "clean_weapon",
@@ -80,29 +92,34 @@ label clean_game:
     call screen clean_weapon_screen(clean_weapon)
 
     if _return == 'exit':
-        if clean_weapon.result == 'bad':
+
+        $ result = clean_weapon.result
+        if result == 'bad':
             e '[game.current_day.current_client.comments["bad"]]'
 
             menu:
                 "Вернуться к прилавку":
+                    $ game.apply_task_result(clean_weapon_task, result)
                     jump next_client
                 "Попробовать снова":
                     jump clean_game
 
-        if clean_weapon.result == 'medium':
+        if result == 'medium':
             e '[game.current_day.current_client.comments["medium"]]'
 
             menu:
                 "Вернуться к прилавку":
+                    $ game.apply_task_result(clean_weapon_task, result)
                     jump next_client
 
             
-        if clean_weapon.result == 'good':
+        if result == 'good':
 
             e '[game.current_day.current_client.comments["good"]]'
 
             menu: 
                 "Вернуться к прилавку":
+                    $ game.apply_task_result(clean_weapon_task, result)
                     jump next_client
 
     return
