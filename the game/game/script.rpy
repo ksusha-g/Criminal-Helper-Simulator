@@ -58,7 +58,7 @@ label client_interaction:
 
     menu:
         "Помочь":
-            jump clean_game
+            jump start_task
         "Отказать":
             e '[game.current_day.current_client.reject]'
             jump next_client
@@ -74,52 +74,49 @@ label next_client:
     else:
         jump client_interaction
 
-label clean_game:
+label start_task:
     hide character
     hide table
     hide newspaper
     hide background
     hide screen states
 
-    $ clean_weapon_task = Task(
-        "clean_weapon",
-        100,
-        5,
-        False
-    )
+    $ task = game.current_day.current_client.tasks[0]
 
-    $ clean_weapon = CleanWeapon(clean_weapon_task, (400, 250, 450, 500))
-    call screen clean_weapon_screen(clean_weapon)
+    $ minigame = MiniGameFactory.create_minigame(task)
 
-    if _return == 'exit':
+    $ screen_name = task.minigame_type + '_screen'
+    $ result_screen = renpy.call_screen(screen_name, minigame)
 
-        $ result = clean_weapon.result
+    if result_screen == 'exit':
+
+        $ result = minigame.result
         if result == 'bad':
-            e '[game.current_day.current_client.comments["bad"]]'
+            e '[game.current_day.current_client.get_comment("bad")]'
 
             menu:
                 "Вернуться к прилавку":
-                    $ game.apply_task_result(clean_weapon_task, result)
+                    $ game.apply_task_result(task, result)
                     jump next_client
                 "Попробовать снова":
-                    jump clean_game
+                    jump start_task
 
         if result == 'medium':
-            e '[game.current_day.current_client.comments["medium"]]'
+            e '[game.current_day.current_client.get_comment("medium")]'
 
             menu:
                 "Вернуться к прилавку":
-                    $ game.apply_task_result(clean_weapon_task, result)
+                    $ game.apply_task_result(task, result)
                     jump next_client
 
             
         if result == 'good':
 
-            e '[game.current_day.current_client.comments["good"]]'
+            e '[game.current_day.current_client.get_comment("good")]'
 
             menu: 
                 "Вернуться к прилавку":
-                    $ game.apply_task_result(clean_weapon_task, result)
+                    $ game.apply_task_result(task, result)
                     jump next_client
 
     return
