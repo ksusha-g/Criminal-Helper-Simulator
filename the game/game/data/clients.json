@@ -10,6 +10,7 @@
             "good": "Отлично! Спасибо."
         },
         "tasks": [
+            "sharpen_weapon",
             "clean_weapon"
         ]
     },
@@ -25,6 +26,7 @@
             "good": "А ты неплох! Скажу о тебе браткам"
         },
         "tasks": [
+            "sharpen_weapon",
             "clean_weapon"
         ]
     },
@@ -40,6 +42,7 @@
             "good": "Ты крутой. До встречи"
         },
         "tasks": [
+            "sharpen_weapon",
             "clean_weapon"
         ]
     }
