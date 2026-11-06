@@ -249,85 +249,138 @@ init python:
 
 
     class SharpenWeapon(MiniGame):
-
         def __init__(self, task, weapon_area):
             super().__init__(task)
 
             self.weapon_area = weapon_area # область оружия
-            
+
             self.round_number = 1
             self.max_rounds = 3
 
-            self.points = []
-            self.trail = []
+            #координаты линии
+            self.coordinates = []
 
+            # минимальное расстояние между координатами
+            self.min_point_distance = 5
+
+            # точки на оружии
+            self.points = []
             self.collected_points = 0
 
+            self.point_radius = 10
             self.generate_points()
 
+        #выбор оружия
+        def select_weapon_image(self):
+            images = ['not_sharpen_axe', 'not_sharpen_sword']
+            return random.choice(images)
+
+        def get_image_size(self, image):
+            if 'axe' in image:
+                return {"x": -650, "y": 100, "zoom": 2.3}
+            if 'sword' in image:
+                return {"x": -1200, "y": -2500, "zoom": 4}
+
+        #генерация точек на оружии
         def generate_points(self):
             self.points = []
+            self.collected_points = 0
 
             x, y, width, height = self.weapon_area
 
             for i in range(10):
+
                 self.points.append({
-                    "x": x + random.randint(0, x + width),
-                    "y": y + random.randint(0, y + height),
+                    "x": random.randint(0, width),
+                    "y": random.randint(0, height),
                     "collected": False
                 })
 
-        def collect_point(self, position):
-            mouse_x, mouse_y = position
 
-            for point in self.points:
+        def start_drawing(self, position):
+            self.is_drawing = True
+            self.coordinates = [position]
 
-                if point["collected"]:
-                    continue
+        #запись координат линии, которую рисует игрок
+        def record_coordinates(self, position):
+            if not self.is_drawing:
+                return
 
-                distance = math.hypot(
-                    mouse_x - point["x"],
-                    mouse_y - point["y"]
-                )
+            last_position = self.coordinates[-1]
 
-                if distance <= 12: # радиус сбора точки
-                    point["collected"] = True
-                    self.collected_points += 1
+            distance = math.hypot(
+                position[0] - last_position[0],
+                position[1] - last_position[1]
+            )
 
-        #если не выполнили условия для прохождения раунда, то сбрасываем прогресс           
-        def reset_attemt(self): 
-            self.trail = []
+            if distance < self.min_point_distance:
+                return
+
+            self.coordinates.append(position)
+
+        #блок геометрических проверок, напишу потом, пока ниче не понятно
+        def stop_drawing(self):
+            if not self.is_drawing: return
+
+            self.is_drawing = False
+            self.finish_attempt()
+
+
+        def orientation(self, a, b, c):
+            pass
+
+
+        def on_segment(self, a, b, c):
+            pass
+
+
+        def segment_intersects(self, p1, q1, p2, q2):
+            pass
+
+        #проверка самопересечения линии
+        def check_intersection(self):
+            pass
+
+        #расстояние от точки до отрезка
+        def point_to_segment_distance(self, point, start, end):
+            pass
+
+        #проверка собранных точек
+        def check_collected_points(self):
+            pass
+
+        #завершение попытки
+        def finish_attempt(self):
+
+            #проверяем самопересечение линии
+            if self.check_intersection():
+                self.reset_attempt()
+                return
+
+            #проверяем собранные точки
+            if self.check_collected_points():
+                self.next_round()
+            else:
+                self.reset_attempt()
+
+        #сброс попытки
+        def reset_attempt(self):
+            self.coordinates = []
             self.collected_points = 0
 
             for point in self.points:
                 point["collected"] = False
 
+        #переход к следующему раунду
         def next_round(self):
 
-            if self.round_number >= self.max_rounds:
+            if self.round_number>= self.max_rounds:
                 self.finish('good')
                 return
 
             self.round_number += 1
+            self.reset_attempt()
             self.generate_points()
-
-
-        def finish_attempt(self, has_intersection):
-
-            if has_intersection:
-                self.reset_attemt()
-                return
-
-            if self.collected_points == 10:
-                self.finish_round()
-            else:
-                self.reset_attemt()
-
-
-        def select_weapon_image(self):
-            images = ['not_sharpen_axe', 'not_sharpen_sword']
-            return random.choice(images)
-
 
 
     class GameData():
