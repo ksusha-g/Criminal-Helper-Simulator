@@ -166,7 +166,7 @@ init python:
         def __init__(self, task):
             self.task = task
             self.state = "running"      # running / finished
-            self.result = None          # плохо / средне / хорошо
+            self.result = 'bad'         # плохо (по умолчанию)/ средне / хорошо
 
         def finish(self, result):
             self.state = "finished"
@@ -178,22 +178,20 @@ init python:
         def __init__(self, task, weapon_area):
             super().__init__(task)
 
-            self.weapon_area = weapon_area # область топора
-            self.dirty_weapon = 1.0 #полностью грязный топор
+            self.weapon_area = weapon_area # область оружия
+            self.dirty_weapon = 1.0 #полностью грязное оружие
             self.clean_progress = 0.0 # прогресс очистки, 1.0 - полностью чисты
             self.mouse_pressed = False #держит ли тряпку мышкой
-            self.clean_amount = 0.0008 #очистка за один вызов (в илеале 0.0008)
+            self.clean_amount = 0.002 #очистка за один вызов (в илеале 0.0008)
 
             self.axe_image = Image("dirty_axe.png")
             self.weapon_width, self.weapon_height = renpy.image_size(
                 self.axe_image
             )
-
-            self.result = 'bad' #результат мини-игры по умолчанию
             
 
         @property
-        def dirty_alpha(self): #прозрачность грязного топора
+        def dirty_alpha(self): #прозрачность грязного оружия
             return self.dirty_weapon - self.clean_progress
 
 
@@ -210,7 +208,7 @@ init python:
             if not self.mouse_pressed:
                 return
 
-            #условие: тряпочка находится над топором
+            #условие: тряпочка находится над оружием
             if not self.napkin_over_weapon(napkin):
                 return
             
@@ -248,6 +246,89 @@ init python:
                 napkin.y
             ): 
                 return True
+
+
+    class SharpenWeapon(MiniGame):
+
+        def __init__(self, task, weapon_area):
+            super().__init__(task)
+
+            self.weapon_area = weapon_area # область оружия
+            
+            self.round_number = 1
+            self.max_rounds = 3
+
+            self.points = []
+            self.trail = []
+
+            self.collected_points = 0
+
+            self.generate_points()
+
+        def generate_points(self):
+            self.points = []
+
+            x, y, width, height = self.weapon_area
+
+            for i in range(10):
+                self.points.append({
+                    "x": x + random.randint(0, x + width),
+                    "y": y + random.randint(0, y + height),
+                    "collected": False
+                })
+
+        def collect_point(self, position):
+            mouse_x, mouse_y = position
+
+            for point in self.points:
+
+                if point["collected"]:
+                    continue
+
+                distance = math.hypot(
+                    mouse_x - point["x"],
+                    mouse_y - point["y"]
+                )
+
+                if distance <= 12: # радиус сбора точки
+                    point["collected"] = True
+                    self.collected_points += 1
+
+        #если не выполнили условия для прохождения раунда, то сбрасываем прогресс           
+        def reset_attemt(self): 
+            self.trail = []
+            self.collected_points = 0
+
+            for point in self.points:
+                point["collected"] = False
+
+        def next_round(self):
+
+            if self.round_number >= self.max_rounds:
+                self.finish('good')
+                return
+
+            self.round_number += 1
+            self.generate_points()
+
+
+        def finish_attempt(self, has_intersection):
+
+            if has_intersection:
+                self.reset_attemt()
+                return
+
+            if self.collected_points == 10:
+                self.finish_round()
+            else:
+                self.reset_attemt()
+
+
+        def select_weapon_image(self):
+            images = ['not_sharpen_axe', 'not_sharpen_sword']
+            return random.choice(images)
+
+
 
     class GameData():
 
@@ -296,4 +377,15 @@ init python:
 
                 self.clients.append(client)
 
+    CLEAN_WEAPON_AREA = (400, 250, 450, 500) # область оружия
+    SHARPEN_WEAPON_AREA = (400, 250, 450, 500) # область оружия
 
+    class MiniGameFactory:
+
+        @staticmethod
+        def create_minigame(task):
+            if task.minigame_type == "clean_weapon":
+                return CleanWeapon(task, CLEAN_WEAPON_AREA)
+            elif task.minigame_type == "sharpen_weapon":
+                return SharpenWeapon(task, SHARPEN_WEAPON_AREA)
+            return None
