@@ -3,6 +3,7 @@ init python:
     import math
     import json
     import random
+    from enum import Enum, auto
     
     def load_json(file_path):
 
@@ -160,16 +161,27 @@ init python:
             return self.comments.get(result, '')
 
 
+    class MiniGameState(Enum): #применяет Finite State Machine для мини-игр
+        READY = auto() #разные состояния мини-игры
+        RUNNING = auto()
+        FINISHED = auto()
+
+
+    class MiniGameResult(Enum): #общие состояния выполнения мини-игры
+        BAD = auto()
+        MEDIUM = auto()
+        GOOD = auto()
+
 
     class MiniGame:
         """Общий класс. Держит только состояние."""
         def __init__(self, task):
             self.task = task
-            self.state = "running"      # running / finished
-            self.result = 'bad'         # плохо (по умолчанию)/ средне / хорошо
+            self.state = MiniGameState.READY #заменяем состояние на Enum (классы выше)
+            self.result = MiniGameResult.BAD
 
         def finish(self, result):
-            self.state = "finished"
+            self.state = MiniGameState.FINISHED
             self.result = result
 
 
@@ -216,13 +228,13 @@ init python:
                 self.clean_progress += self.clean_amount
 
             if self.clean_progress < 0.65:
-                self.result = 'bad'
+                self.result = MiniGameResult.BAD
 
             if self.clean_progress >= 0.65 and self.clean_progress < 1:
-                self.result = 'medium'
+                self.result = MiniGameResult.MEDIUM
 
             if self.clean_progress >= 1:
-                self.result = 'good'
+                self.result = MiniGameResult.GOOD
 
             renpy.restart_interaction()
             
@@ -248,9 +260,21 @@ init python:
                 return True
 
 
+    class SharpenWeaponState(Enum):
+        READY = auto() #начало/повторно когда неудача/следующий раунд
+        DRAWING = auto() #нельзя начать рисовать, если игрок уже рисует
+        CHECKING = auto() #нельзя проверять до завершения рисования
+        FINISHED = auto() #нельзя менять коордрдинаты, если не DRAWING
+        #нельзя начать новый раунд после завершения мини-игры
+
+
     class SharpenWeapon(MiniGame):
         def __init__(self, task, weapon_area):
             super().__init__(task)
+
+            self.action_state = SharpenWeaponState.READY
+
+            self.is_drawing = False #новое
 
             self.weapon_area = weapon_area # область оружия
 
@@ -281,6 +305,23 @@ init python:
             if 'sword' in image:
                 return {"x": -1200, "y": -2500, "zoom": 4}
 
+        def change_state(self, new_state):
+            allowed_transitions = {
+                SharpenWeaponState.READY: [SharpenWeaponState.DRAWING],
+                SharpenWeaponState.DRAWING: [SharpenWeaponState.CHECKING],
+                SharpenWeaponState.CHECKING: [
+                    SharpenWeaponState.READY,
+                    SharpenWeaponState.FINISHED
+                ],
+                SharpenWeaponState.FINISHED: []
+            }
+
+            if new_state not in allowed_transitions[self.action_state]:
+                return False
+
+            self.action_state = new_state
+            return True
+
         #генерация точек на оружии
         def generate_points(self):
             self.points = []
@@ -298,11 +339,20 @@ init python:
 
 
         def start_drawing(self, position):
+            if self.action_state != SharpenWeaponState.READY:
+                return #новое, дальше лень писать про новое
+
+            self.state = MiniGameState.RUNNING
+            self.change_state(SharpenWeaponState.DRAWING)
+
             self.is_drawing = True
             self.coordinates = [position]
 
         #запись координат линии, которую рисует игрок
         def record_coordinates(self, position):
+            if self.action_state != SharpenWeaponState.DRAWING:
+                return
+            
             if not self.is_drawing:
                 return
 
@@ -320,9 +370,12 @@ init python:
 
         #блок геометрических проверок, напишу потом, пока ниче не понятно
         def stop_drawing(self):
-            if not self.is_drawing: return
+            if self.action_state != SharpenWeaponState.DRAWING:
+                return
 
             self.is_drawing = False
+            self.change_state(SharpenWeaponState.CHECKING)
+
             self.finish_attempt()
 
 
@@ -351,17 +404,16 @@ init python:
 
         #завершение попытки
         def finish_attempt(self):
-
-            #проверяем самопересечение линии
             if self.check_intersection():
                 self.reset_attempt()
+                self.change_state(SharpenWeaponState.READY)
                 return
 
-            #проверяем собранные точки
             if self.check_collected_points():
                 self.next_round()
             else:
                 self.reset_attempt()
+                self.change_state(SharpenWeaponState.READY)
 
         #сброс попытки
         def reset_attempt(self):
@@ -373,14 +425,15 @@ init python:
 
         #переход к следующему раунду
         def next_round(self):
-
-            if self.round_number>= self.max_rounds:
-                self.finish('good')
+            if self.round_number >= self.max_rounds:
+                self.change_state(SharpenWeaponState.FINISHED)
+                self.finish(self.result)
                 return
 
             self.round_number += 1
             self.reset_attempt()
             self.generate_points()
+            self.change_state(SharpenWeaponState.READY)
 
 
     class GameData():
