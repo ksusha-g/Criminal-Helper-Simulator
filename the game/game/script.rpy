@@ -1,122 +1,509 @@
-﻿transform client_size:
-    xysize (2000, 1800)
-    fit "contain"
-    xalign 0.5
+# game/logic.rpy
+init python:
+    import math
+    import json
+    import random
+    from enum import Enum, auto
+    
+    def load_json(file_path):
+        with renpy.open_file(file_path) as file:
+            return json.load(file)
 
-define e = Character(
-    'game.current_day.current_client.name',
-    dynamic = True, #позволяет вычислять имя персонажа перед репликой
-    color = "#000000"
-)
-image background = im.Scale("background.webp", 1920, 1080)
-image table = im.Scale('table.png', 1920, 1080)
-image newspaper = im.Scale('newspaper.png', 1920, 1080)
 
-default game_data = None
-default game = None
-default player = None
+    class Game:
+        def __init__(self, player, clients):
+            self.player = player
+            self.clients = clients
 
-label start:
+            self.day_number = 0
+            self.current_day = None
 
-    $ game_data = GameData()
-    $ game_data.load()
-    $ player = Player("Герой")
-    $ game = Game(player, game_data.clients)
-    'Добро пожаловать в игру!'
+            self.client_generator = Client_generator(clients)
 
-    jump new_day
+        def can_start_day(self):
+            if self.player.reputation < -5:
+                return False
+            return True
 
-label close_market:
-    scene background
-    'Вы проиграли. Ваша репутация слишком низкая.'
-    return
+        def start_day(self):
+            if not self.can_start_day():
+                return False
 
-label new_day:
-    scene background
-    $ game.start_day()
+            self.day_number += 1
 
-    'Начался день [game.day_number]'
+            self.current_day = Day(
+                self.day_number,
+                self.client_generator
+            )
 
-    jump client_interaction 
+            self.current_day.start()
 
-label finish_day:
-    scene background
-    $ game.finish_day()
+            return True
 
-    'День [game.day_number] завершен.'
-
-    jump new_day
-
-label client_interaction:
-    scene background
-    show expression game.current_day.current_client.image as character at client_size
-    show table
-    show newspaper
-    show screen states
-
-    e '[game.current_day.current_client.phrase]'
-
-    menu:
-        "Помочь":
-            jump start_task
-        "Отказать":
-            e '[game.current_day.current_client.reject]'
-            jump next_client
-
-label next_client:
-    $ game.current_day.finish_client()
-
-    if player.reputation < -5:
-        jump close_market
-
-    if game.current_day.is_finished:
-        jump finish_day
-    else:
-        jump client_interaction
-
-label start_task:
-    hide character
-    hide table
-    hide newspaper
-    hide background
-    hide screen states
-
-    $ task = game.current_day.current_client.tasks[0]
-
-    $ minigame = MiniGameFactory.create_minigame(task)
-
-    $ screen_name = task.minigame_type + '_screen'
-    $ result_screen = renpy.call_screen(screen_name, minigame)
-
-    if result_screen == 'exit':
-
-        $ result = minigame.result
-        if result == 'bad':
-            e '[game.current_day.current_client.get_comment("bad")]'
-
-            menu:
-                "Вернуться к прилавку":
-                    $ game.apply_task_result(task, result)
-                    jump next_client
-                "Попробовать снова":
-                    jump start_task
-
-        if result == 'medium':
-            e '[game.current_day.current_client.get_comment("medium")]'
-
-            menu:
-                "Вернуться к прилавку":
-                    $ game.apply_task_result(task, result)
-                    jump next_client
-
+        def finish_day(self):
+            if self.current_day:
+                self.current_day.finish()
             
-        if result == 'good':
+            return True
 
-            e '[game.current_day.current_client.get_comment("good")]'
+        def next_day(self):
+            self.finish_day()
 
-            menu: 
-                "Вернуться к прилавку":
-                    $ game.apply_task_result(task, result)
-                    jump next_client
+            if self.can_start_day():
+                self.start_day()
+            
+            return False
 
-    return
+        def apply_task_result(self, task, result):
+            if result == MiniGameResult.GOOD:
+                self.player.earn(task.payment)
+                self.player.change_reputation(task.reputation)
+
+            elif result == MiniGameResult.MEDIUM:
+                self.player.earn(task.payment // 2)
+
+            elif result == MiniGameResult.BAD:
+                self.player.change_reputation(-task.reputation // 2)
+
+
+    class DayState(Enum): #чтобы логика была корректной, дни не путались
+        READY = auto() 
+        PLAYING = auto()
+        FINISHED = auto()
+
+
+    class Day:
+        def __init__(self, day_number, client_generator, start_hour=8):
+            self.day_number = day_number
+
+            self.start_hour = start_hour
+            self.current_hour = start_hour
+
+            self.clients_number = 6
+            self.clients = []
+            self.current_client = None
+            self.completed_clients = 0
+
+            #отвечает за создание клиентов
+            self.client_generator = client_generator
+            self.state = DayState.READY
+
+        def start(self):
+            if self.state != DayState.READY:
+                return False
+
+            self.clients = self.client_generator.generate(
+                self.clients_number
+            )
+            if not self.clients:
+                self.finish()
+                return False
+
+            self.current_client = self.clients[0]
+            self.state = DayState.PLAYING
+
+            print(f'день {self.day_number}, clients: {vars(self.current_client)}')
+
+            return True
+
+        def finish_client(self):
+            if self.state != DayState.PLAYING:
+                return False
+            self.completed_clients += 1
+            #мини-игра длится 2 часа игрового времени
+            self.current_hour += 2 #мб потом вынести, чтоюы не было магическим числом
+
+            if self.completed_clients >= self.clients_number:
+                self.finish()
+                return
+
+            self.current_client = self.clients[self.completed_clients]
+
+            return True
+
+        def finish(self):
+            if self.state == DayState.FINISHED:
+                return False
+            
+            self.state = DayState.FINISHED
+            self.current_client = None
+
+            return True
+
+        def get_time(self):
+            return f'{self.current_hour}:00'
+
+
+    class Client_generator():
+        def __init__(self, clients):
+            self.clients = clients
+
+        def generate(self, number):
+            result = []
+
+            for i in range(number):
+                client = random.choice(self.clients)
+                result.append(client)
+
+            return result
+
+
+    class Player:
+        def __init__(self, name):
+            self.name = name
+            self.money = 0
+            self.reputation = 0
+
+        def earn(self, amount): #получить деньги
+            self.money += amount 
+
+        def change_reputation(self, amount): #смена репутации
+            self.reputation += amount
+
+        def get_money(self):
+            return f'{self.money}'
+
+        def get_reputation(self):
+            return f'{self.reputation}'
+
+
+    class Task:
+        def __init__(self, minigame_type, payment, reputation, persuade):
+            self.minigame_type = minigame_type #тип мини-игры
+            self.payment = payment #добавить max_payment
+            self.reputation = reputation # добавить max_reputation
+            self.persuade = persuade #можно ли отговорить
+
+
+    class Client:
+        def __init__(self, name, image, phrase, reject, comments, tasks):
+            self.name = name #имя клиента
+            self.image = image #картинка клиента
+            self.phrase = phrase # речь клиента
+            self.reject = reject #речь клиента при отказе выполнения задания
+            self.comments = comments # комментарии к выполнению задания
+            self.tasks = tasks  #список доступных заданий
+
+        def get_comment(self, result):
+            return self.comments.get(result, '')
+
+
+    class MiniGameState(Enum): #применяет Finite State Machine для мини-игр
+        READY = auto() #разные состояния мини-игры
+        RUNNING = auto()
+        FINISHED = auto()
+
+
+    class MiniGameResult(Enum): #общие состояния выполнения мини-игры
+        BAD = auto()
+        MEDIUM = auto()
+        GOOD = auto()
+
+
+    class MiniGame:
+        """Общий класс. Держит только состояние."""
+        def __init__(self, task):
+            self.task = task
+            self.state = MiniGameState.READY #заменяем состояние на Enum (классы выше)
+            self.result = MiniGameResult.BAD
+
+        def finish(self, result):
+            self.state = MiniGameState.FINISHED
+            self.result = result
+
+
+    class CleanWeapon(MiniGame):
+        def __init__(self, task, weapon_area):
+            super().__init__(task)
+
+            self.weapon_area = weapon_area # область оружия
+            self.dirty_weapon = 1.0 #полностью грязное оружие
+            self.clean_progress = 0.0 # прогресс очистки, 1.0 - полностью чисты
+            self.mouse_pressed = False #держит ли тряпку мышкой
+            self.clean_amount = 0.002 #очистка за один вызов (в илеале 0.0008)
+
+            self.axe_image = Image("dirty_axe.png")
+            self.weapon_width, self.weapon_height = renpy.image_size(
+                self.axe_image
+            )
+
+        @property
+        def dirty_alpha(self): #прозрачность грязного оружия
+            return self.dirty_weapon - self.clean_progress
+
+        #вызываем в момент, когда игрок нажал на тряпочку   
+        def start_drag(self, drags):
+            self.mouse_pressed = True
+
+        #вызываем во время движения мышкой
+        def update_drag(self, drags):
+            napkin = drags[0]
+
+            #на всякий случай проверяем нажатие
+            if not self.mouse_pressed:
+                return
+
+            #условие: тряпочка находится над оружием
+            if not self.napkin_over_weapon(napkin):
+                return
+            
+            if self.clean_progress <= 1.0:
+                self.clean_progress += self.clean_amount
+
+            if self.clean_progress < 0.65:
+                self.result = MiniGameResult.BAD
+
+            if self.clean_progress >= 0.65 and self.clean_progress < 1:
+                self.result = MiniGameResult.MEDIUM
+
+            if self.clean_progress >= 1:
+                self.result = MiniGameResult.GOOD
+
+            renpy.restart_interaction()
+
+        def finish_drag(self, drags, drop):
+            self.mouse_pressed = False
+
+        #проверяет находится ли тряпочка над непрозрачными 
+        #пикселями оружия
+        def napkin_over_weapon(self, napkin):
+            weapon_x, weapon_y, weapon_width, weapon_height = self.weapon_area
+
+            if renpy.is_pixel_opaque(
+                self.axe_image,
+                self.weapon_width,
+                self.weapon_height,
+                0.0,
+                0.0,
+                napkin.x,
+                napkin.y
+            ): 
+                return True
+
+
+    class SharpenWeaponState(Enum):
+        READY = auto() #начало/повторно когда неудача/следующий раунд
+        DRAWING = auto() #нельзя начать рисовать, если игрок уже рисует
+        CHECKING = auto() #нельзя проверять до завершения рисования
+        FINISHED = auto() #нельзя менять коордрдинаты, если не DRAWING
+        #нельзя начать новый раунд после завершения мини-игры
+
+
+    class SharpenWeapon(MiniGame):
+        def __init__(self, task, weapon_area):
+            super().__init__(task)
+
+            self.action_state = SharpenWeaponState.READY
+
+            self.is_drawing = False #новое
+
+            self.weapon_area = weapon_area # область оружия
+
+            self.round_number = 1
+            self.max_rounds = 3
+
+            #координаты линии
+            self.coordinates = []
+
+            # минимальное расстояние между координатами
+            self.min_point_distance = 5
+
+            # точки на оружии
+            self.points = []
+            self.collected_points = 0
+
+            self.point_radius = 10
+            self.generate_points()
+
+        #выбор оружия
+        def select_weapon_image(self):
+            images = ['not_sharpen_axe', 'not_sharpen_sword']
+            return random.choice(images)
+
+        def get_image_size(self, image):
+            if 'axe' in image:
+                return {"x": -650, "y": 100, "zoom": 2.3}
+            if 'sword' in image:
+                return {"x": -1200, "y": -2500, "zoom": 4}
+
+        def change_state(self, new_state):
+            allowed_transitions = {
+                SharpenWeaponState.READY: [SharpenWeaponState.DRAWING],
+                SharpenWeaponState.DRAWING: [SharpenWeaponState.CHECKING],
+                SharpenWeaponState.CHECKING: [
+                    SharpenWeaponState.READY,
+                    SharpenWeaponState.FINISHED
+                ],
+                SharpenWeaponState.FINISHED: []
+            }
+
+            if new_state not in allowed_transitions[self.action_state]:
+                return False
+
+            self.action_state = new_state
+            return True
+
+        #генерация точек на оружии
+        def generate_points(self):
+            self.points = []
+            self.collected_points = 0
+
+            x, y, width, height = self.weapon_area
+
+            for i in range(10):
+
+                self.points.append({
+                    "x": random.randint(0, width),
+                    "y": random.randint(0, height),
+                    "collected": False
+                })
+
+        def start_drawing(self, position):
+            if self.action_state != SharpenWeaponState.READY:
+                return #новое, дальше лень писать про новое
+
+            self.state = MiniGameState.RUNNING
+            self.change_state(SharpenWeaponState.DRAWING)
+
+            self.is_drawing = True
+            self.coordinates = [position]
+
+        #запись координат линии, которую рисует игрок
+        def record_coordinates(self, position):
+            if self.action_state != SharpenWeaponState.DRAWING:
+                return
+            
+            if not self.is_drawing:
+                return
+
+            last_position = self.coordinates[-1]
+
+            distance = math.hypot(
+                position[0] - last_position[0],
+                position[1] - last_position[1]
+            )
+
+            if distance < self.min_point_distance:
+                return
+
+            self.coordinates.append(position)
+
+        #блок геометрических проверок, напишу потом, пока ниче не понятно
+        def stop_drawing(self):
+            if self.action_state != SharpenWeaponState.DRAWING:
+                return
+
+            self.is_drawing = False
+            self.change_state(SharpenWeaponState.CHECKING)
+
+            self.finish_attempt()
+
+        def orientation(self, a, b, c):
+            pass
+
+        def on_segment(self, a, b, c):
+            pass
+
+        def segment_intersects(self, p1, q1, p2, q2):
+            pass
+
+        #проверка самопересечения линии
+        def check_intersection(self):
+            pass
+
+        #расстояние от точки до отрезка
+        def point_to_segment_distance(self, point, start, end):
+            pass
+
+        #проверка собранных точек
+        def check_collected_points(self):
+            pass
+
+        #завершение попытки
+        def finish_attempt(self):
+            if self.check_intersection():
+                self.reset_attempt()
+                self.change_state(SharpenWeaponState.READY)
+                return
+
+            if self.check_collected_points():
+                self.next_round()
+            else:
+                self.reset_attempt()
+                self.change_state(SharpenWeaponState.READY)
+
+        #сброс попытки
+        def reset_attempt(self):
+            self.coordinates = []
+            self.collected_points = 0
+
+            for point in self.points:
+                point["collected"] = False
+
+        #переход к следующему раунду
+        def next_round(self):
+            if self.round_number >= self.max_rounds:
+                self.change_state(SharpenWeaponState.FINISHED)
+                self.finish(self.result)
+                return
+
+            self.round_number += 1
+            self.reset_attempt()
+            self.generate_points()
+            self.change_state(SharpenWeaponState.READY)
+
+
+    class GameData():
+        def __init__(self):
+            self.tasks = {}
+            self.clients = []
+
+        def load(self):
+            task_data = load_json("data/tasks.json")
+            client_data = load_json("data/clients.json")
+
+            self.load_tasks(task_data)
+            self.load_clients(client_data)
+
+        def load_tasks(self, data):
+            for task_id, task_data in data.items():
+
+                self.tasks[task_id] = Task(
+                    task_data["minigame_type"],
+                    task_data["payment"],
+                    task_data["reputation"],
+                    task_data["persuade"]
+                )
+
+        def load_clients(self, data):
+            for client_data in data:
+
+                client_tasks = []
+
+                for task_id in client_data["tasks"]:
+                    client_tasks.append(self.tasks[task_id])
+
+                client = Client(
+                    name = client_data["name"],
+                    image = client_data["image"],
+                    phrase = client_data["phrase"],
+                    comments = client_data["comments"],
+                    reject = client_data["reject"],
+                    tasks = client_tasks
+                )
+
+                self.clients.append(client)
+
+
+    CLEAN_WEAPON_AREA = (400, 250, 450, 500) # область оружия
+    SHARPEN_WEAPON_AREA = (400, 250, 450, 500) # область оружия
+
+
+    class MiniGameFactory:
+        @staticmethod
+        def create_minigame(task):
+            if task.minigame_type == "clean_weapon":
+                return CleanWeapon(task, CLEAN_WEAPON_AREA)
+            elif task.minigame_type == "sharpen_weapon":
+                return SharpenWeapon(task, SHARPEN_WEAPON_AREA)
+            return None
