@@ -18,6 +18,10 @@ screen sharpen_weapon_screen(sharpen_weapon):
         xalign 0.5
         yalign 0.03
 
+    text 'Ошибки: [sharpen_weapon.mistakes]':
+        xalign 0.0
+        yalign 0.03
+
 
     for point in sharpen_weapon.points:
         
@@ -50,4 +54,4 @@ screen sharpen_weapon_screen(sharpen_weapon):
     )
 
     if sharpen_weapon.action_state == SharpenWeaponState.FINISHED:
-        timer 0.01 action Return('good')
+        timer 0.01 action Return('exit')

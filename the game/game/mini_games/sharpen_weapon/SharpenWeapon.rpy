@@ -15,11 +15,14 @@ init python:
             self.round_number = 1
             self.max_rounds = 3
 
+            self.mistakes = 0
+
             #координаты линии
             self.coordinates = []
+            self.min_record_distance = 5
 
             # минимальное расстояние между координатами
-            self.min_point_distance = 5
+            self.min_point_distance = 50
 
             # точки на оружии
             self.points = []
@@ -65,12 +68,31 @@ init python:
             x, y, width, height = self.weapon_area
 
             for i in range(10):
+                while True:
+                    new_x = random.randint(0, width)
+                    new_y = random.randint(0, height)
+
+                    too_close = False
+
+                    for point in self.points:
+                        distance = math.hypot(
+                            new_x - point["x"],
+                            new_y - point["y"]
+                        )
+
+                        if distance < self.min_point_distance:
+                            too_close = True
+                            break
+
+                    if not too_close:
+                        break
 
                 self.points.append({
-                    "x": random.randint(0, width),
-                    "y": random.randint(0, height),
+                    "x": new_x,
+                    "y": new_y,
                     "collected": False
                 })
+
 
         def start_drawing(self, position):
             if self.action_state != SharpenWeaponState.READY:
@@ -98,12 +120,12 @@ init python:
                 position[1] - last_position[1]
             )
 
-            if distance < self.min_point_distance:
+            if distance < self.min_record_distance:
                 return
 
             self.coordinates.append(position)
 
-        #блок геометрических проверок, напишу потом, пока ниче не понятно
+
         def stop_drawing(self):
             if self.action_state != SharpenWeaponState.DRAWING:
                 return
@@ -256,6 +278,7 @@ init python:
 
         #сброс попытки
         def reset_attempt(self):
+            self.mistakes += 1
             self.coordinates = []
             self.collected_points = 0
             self.is_drawing = False
@@ -268,6 +291,7 @@ init python:
         #переход к следующему раунду
         def next_round(self):
             if self.round_number >= self.max_rounds:
+                self.get_result()
                 self.change_state(SharpenWeaponState.FINISHED)
                 self.finish(self.result)
                 return
@@ -278,3 +302,13 @@ init python:
             self.is_drawing = False
             self.collected_points = 0
             self.change_state(SharpenWeaponState.READY)
+
+
+        def get_result(self):
+
+            if self.mistakes == 0:
+                self.result = MiniGameResult.GOOD
+            elif 1 <= self.mistakes <= 3:
+                self.result = MiniGameResult.MEDIUM
+            else:
+                self.result = MiniGameResult.BAD
