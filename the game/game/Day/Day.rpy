@@ -3,6 +3,8 @@ init python:
         def __init__(self, day_number, client_generator, start_hour=8):
             self.day_number = day_number
 
+            self.statistics = DayStatistics()
+
             self.start_hour = start_hour
             self.current_hour = start_hour
 

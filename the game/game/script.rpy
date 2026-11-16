@@ -72,6 +72,8 @@ label finish_day:
 
     'День [game.day_number] завершен.'
 
+    $ print("DAY REPORT:", game.last_day_report)
+
     jump new_day
 
 
@@ -93,6 +95,7 @@ label client_interaction:
 
         "Отказать":
             e '[game.current_day.current_client.reject]'
+            $ game.current_day.statistics.add_refused_client()
             jump next_client
 
 

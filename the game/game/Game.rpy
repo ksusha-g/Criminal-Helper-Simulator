@@ -4,6 +4,8 @@ init python:
             self.player = player
             self.clients = clients
 
+            self.last_day_report = None
+
             self.day_number = 0
             self.current_day = None
 
@@ -32,7 +34,16 @@ init python:
         def finish_day(self):
             if self.current_day:
                 self.current_day.finish()
-            
+
+                stats = self.current_day.statistics
+
+                self.last_day_report = {
+                    "day_number": self.current_day.day_number,
+                    "clients_served": stats.clients_served,
+                    "clients_refused": stats.clients_refused,
+                    "money_earned": stats.money_earned
+                }
+
             return True
 
         def next_day(self):
@@ -48,9 +59,16 @@ init python:
                 self.player.earn(task.payment)
                 self.player.change_reputation(task.reputation)
 
+                self.current_day.statistics.add_money(task.payment)
+                self.current_day.statistics.add_reputation(task.reputation)
+
             elif result == MiniGameResult.MEDIUM:
                 self.player.earn(task.payment // 2)
+                self.current_day.statistics.add_money(task.payment // 2)
 
             elif result == MiniGameResult.BAD:
-                self.player.change_reputation(-task.reputation // 2)
+                self.player.change_reputation(-(task.reputation // 2))
+                self.current_day.statistics.add_reputation(-(task.reputation // 2))
+
+            self.current_day.statistics.add_served_client()
                 
