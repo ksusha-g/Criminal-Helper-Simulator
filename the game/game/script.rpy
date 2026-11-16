@@ -13,7 +13,6 @@ define e = Character(
 
 image background = im.Scale("background.webp", 1920, 1080)
 image table = im.Scale("table.png", 1920, 1080)
-image newspaper = im.Scale("newspaper.png", 1920, 1080)
 
 default game_data = None
 default game = None
@@ -82,7 +81,7 @@ label client_interaction:
 
     show expression game.current_day.current_client.image as character at client_size
     show table
-    show newspaper
+    show screen newspaper_screen
     show screen states
 
     e '[game.current_day.current_client.phrase]'
@@ -116,7 +115,7 @@ label start_task:
 
     hide character
     hide table
-    hide newspaper
+    hide screen newspaper_screen
     hide background
     hide screen states
 
