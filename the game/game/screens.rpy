@@ -116,6 +116,39 @@ screen say(who, what):
         add SideImage() xalign 0.0 yalign 1.0
 
 
+screen dialogs(who, what):
+
+    # Фоновое изображение диалогового окна.
+    add "images/dialog_window.png"
+
+    #Текст реплик
+    text what:
+        id "what"
+        xpos 1220
+        ypos 110
+        xmaximum 600
+        size 40
+        color "#222222"
+
+    # Пузырёк имени.
+    if who is not None:
+
+        add "gui/bubble.png":
+            xpos 1066
+            ypos 480
+
+        text who:
+            id "who"
+            xpos 1080
+            ypos 525
+            xmaximum 170
+            size 25
+            color "#222222"
+            bold True
+            text_align 0.5
+
+               
+
 ## Делает namebox доступным для стилизации через объект Character.
 init python:
     config.character_id_prefixes.append('namebox')

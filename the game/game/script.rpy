@@ -7,7 +7,8 @@ transform client_size:
 define e = Character(
     'game.current_day.current_client.name',
     dynamic=True,
-    color="#000000"
+    color="#000000",
+    screen='dialogs'
 )
 
 image background = im.Scale("background.webp", 1920, 1080)
