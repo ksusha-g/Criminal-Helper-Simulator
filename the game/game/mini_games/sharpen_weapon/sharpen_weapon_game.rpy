@@ -22,20 +22,25 @@ screen sharpen_weapon_screen(sharpen_weapon):
         xalign 0.0
         yalign 0.03
 
+    if sharpen_weapon.is_checking:
+        timer 0.8 action [
+            SetField(sharpen_weapon, "is_checking", False),
+            Function(sharpen_weapon.finalize_reset)
+        ]
 
     for point in sharpen_weapon.points:
         
         if point['collected']:
             add Solid("#55dd77"):
                 xysize (18, 18)
-                xpos point["x"]
-                ypos point["y"]
+                xpos point["x"] - 9
+                ypos point["y"] - 9
 
         else:
             add Solid("#ffcc33"):
                 xysize (18, 18)
-                xpos point["x"]
-                ypos point["y"]
+                xpos point["x"] - 9
+                ypos point["y"] - 9
 
     #отпускаем мышку
     key "mouseup_1" action Function(
@@ -55,3 +60,11 @@ screen sharpen_weapon_screen(sharpen_weapon):
 
     if sharpen_weapon.action_state == SharpenWeaponState.FINISHED:
         timer 0.01 action Return('exit')
+
+    textbutton "?":
+        xalign 0.98
+        yalign 0.02
+        text_size 40
+        text_color "#ffcc33"
+        text_bold True
+        action Show("minigame_help", help_text=game_data.task_data["sharpen_weapon"]["help_text"])

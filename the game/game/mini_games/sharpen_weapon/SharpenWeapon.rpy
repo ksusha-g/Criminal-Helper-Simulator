@@ -9,6 +9,7 @@ init python:
             self.action_state = SharpenWeaponState.READY
 
             self.is_drawing = False #новое
+            self.is_checking = False
 
             self.weapon_area = weapon_area # область оружия
 
@@ -279,12 +280,17 @@ init python:
         #сброс попытки
         def reset_attempt(self):
             self.mistakes += 1
+            #нет смысла дальше мучить игрока, все равно он уже ничего не получит
+            if self.mistakes > 3:
+                self.action_state = SharpenWeaponState.FINISHED
+                return
+
+        
             self.coordinates = []
             self.collected_points = 0
             self.is_drawing = False
+            self.is_checking = True
 
-            for point in self.points:
-                point["collected"] = False
 
             self.action_state = SharpenWeaponState.READY
 
@@ -295,6 +301,7 @@ init python:
                 self.change_state(SharpenWeaponState.FINISHED)
                 self.finish(self.result)
                 return
+            
 
             self.round_number += 1
             self.generate_points()
@@ -303,6 +310,10 @@ init python:
             self.collected_points = 0
             self.change_state(SharpenWeaponState.READY)
 
+        def finalize_reset(self):
+            for point in self.points:
+                point["collected"] = False
+            self.action_state = SharpenWeaponState.READY
 
         def get_result(self):
 
