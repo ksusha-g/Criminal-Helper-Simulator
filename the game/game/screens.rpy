@@ -119,7 +119,8 @@ screen say(who, what):
 screen dialogs(who, what):
 
     # Фоновое изображение диалогового окна.
-    add "images/dialog_window.png"
+    add "images/dialogue_window.png"
+    $ current_size = 25 if len(what) > 150 else 30
 
     #Текст реплик
     text what:
@@ -127,20 +128,20 @@ screen dialogs(who, what):
         xpos 1220
         ypos 110
         xmaximum 600
-        size 40
-        color "#222222"
+        size current_size
+        color "#030303"
 
     # Пузырёк имени.
     if who is not None:
 
         add "gui/bubble.png":
-            xpos 1066
-            ypos 480
+            xpos 1166
+            ypos 380
 
         text who:
             id "who"
-            xpos 1080
-            ypos 525
+            xpos 1180
+            ypos 425
             xmaximum 170
             size 25
             color "#222222"

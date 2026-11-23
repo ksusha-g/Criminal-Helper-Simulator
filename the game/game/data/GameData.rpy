@@ -1,5 +1,8 @@
 init python:
     import json
+
+    task_data = None
+    client_data = None
     
     class GameData():
         def __init__(self):
@@ -7,6 +10,8 @@ init python:
             self.clients = []
 
         def load(self):
+            global task_data, client_data
+
             task_data = load_json("data/json_files/tasks.json")
             client_data = load_json("data/json_files/clients.json")
 
@@ -20,7 +25,8 @@ init python:
                     task_data["minigame_type"],
                     task_data["payment"],
                     task_data["reputation"],
-                    task_data["persuade"]
+                    task_data["persuade"],
+                    task_data["help_text"]
                 )
 
         def load_clients(self, data):

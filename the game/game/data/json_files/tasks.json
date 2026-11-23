@@ -3,13 +3,15 @@
         "minigame_type": "clean_weapon",
         "payment": 100,
         "reputation": 5,
-        "persuade": false
+        "persuade": false,
+        "help_text": "Возьмите тряпку и протрите оружие."
     },
 
     "sharpen_weapon": {
         "minigame_type": "sharpen_weapon",
         "payment": 150,
         "reputation": 10,
-        "persuade": false
+        "persuade": false,
+        "help_text": "Соедините точки одной линией, не пересекая ее."
     }
 }
