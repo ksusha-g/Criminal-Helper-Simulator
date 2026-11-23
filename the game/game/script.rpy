@@ -58,6 +58,7 @@ label close_market:
 label new_day:
 
     scene background
+    hide screen newspaper_screen
 
     $ day_started = game.start_day()
 
@@ -92,6 +93,7 @@ label run_story_events:
 label finish_day:
 
     scene background
+    hide screen newspaper_screen
 
     $ game.finish_day()
 
