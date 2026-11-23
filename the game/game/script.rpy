@@ -24,6 +24,11 @@ default result = None
 default result_screen = None
 default screen_name = None
 
+#История
+default story_manager = None
+default story_event_completed = {}
+default today_events = []
+
 
 label start:
 
@@ -33,7 +38,10 @@ label start:
     $ player = Player("Герой")
     $ game = Game(player, game_data.clients)
 
-    'Добро пожаловать в игру!'
+    $ story_manager = StoryManager(
+        STORY_CHARACTERS,
+        STORY_EVENTS
+    )
 
     jump new_day
 
@@ -51,8 +59,6 @@ label new_day:
 
     scene background
 
-    #ИЗМЕНЕНО: проверяем, удалось ли начать новый день
-    #start_day() возвращает False, если репутация слишком низкая
     $ day_started = game.start_day()
 
     if not day_started:
@@ -60,8 +66,28 @@ label new_day:
 
     'Начался день [game.day_number]'
 
+    call run_story_events
+
     jump client_interaction
 
+label run_story_events:
+
+    $ today_events = story_manager.get_events(
+        game.day_number,
+        story_event_completed
+    )
+
+    while today_events:
+        $ current_story_event = today_events.pop(0)
+
+        call expression current_story_event.label
+
+        $ story_manager.complete_event(
+            current_story_event,
+            story_event_completed
+        )
+
+    jump client_interaction
 
 label finish_day:
 
@@ -90,6 +116,7 @@ label client_interaction:
     menu:
 
         "Помочь":
+            $ task = game.current_day.current_client.tasks[0]
             jump start_task
 
         "Отказать":
@@ -114,15 +141,12 @@ label next_client:
 
 
 label start_task:
-
     hide character
     hide table
     hide screen newspaper_screen
     hide background
     hide screen states
-
-    $ task = game.current_day.current_client.tasks[0]
-
+    
     $ minigame = MiniGameFactory.create_minigame(task)
 
     if minigame is None:

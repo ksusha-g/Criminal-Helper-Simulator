@@ -12,13 +12,4 @@ init python:
                 client = random.choice(self.clients)
                 result.append(client)
 
-            return result
-
-
-
-
-
-
-
-
-
+            return resultЫ
