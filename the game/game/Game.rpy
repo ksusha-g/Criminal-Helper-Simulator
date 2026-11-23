@@ -41,7 +41,8 @@ init python:
                     "day_number": self.current_day.day_number,
                     "clients_served": stats.clients_served,
                     "clients_refused": stats.clients_refused,
-                    "money_earned": stats.money_earned
+                    "money_earned": stats.money_earned,
+                    "reputation_earned": stats.reputation_earned
                 }
 
             return True

@@ -50,6 +50,7 @@ label close_market:
 label new_day:
 
     scene background
+    hide screen newspaper_screen
 
     #ИЗМЕНЕНО: проверяем, удалось ли начать новый день
     #start_day() возвращает False, если репутация слишком низкая
@@ -66,6 +67,7 @@ label new_day:
 label finish_day:
 
     scene background
+    hide screen newspaper_screen
 
     $ game.finish_day()
 
