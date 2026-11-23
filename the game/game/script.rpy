@@ -1,4 +1,3 @@
-
 transform client_size:
     xysize (2000, 1800)
     fit "contain"

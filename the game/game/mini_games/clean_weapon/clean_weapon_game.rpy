@@ -30,6 +30,14 @@ screen clean_weapon_screen(clean_weapon):
             dragging clean_weapon.update_drag
             dragged clean_weapon.finish_drag
 
+    textbutton "?":
+        xalign 0.98
+        yalign 0.02
+        text_size 40
+        text_color "#ffcc33"
+        text_bold True
+        action Show("minigame_help", game=clean_weapon)
+
     textbutton 'Вернуться к прилавку':
         xalign 0.5
         yalign 0.9

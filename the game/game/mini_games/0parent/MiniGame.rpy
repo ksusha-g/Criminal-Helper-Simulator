@@ -6,6 +6,11 @@ init python:
             self.state = MiniGameState.READY #заменяем состояние на Enum (классы выше)
             self.result = MiniGameResult.BAD
 
+
         def finish(self, result):
             self.state = MiniGameState.FINISHED
             self.result = result
+        
+
+        def get_help_text(self):
+            return self.task.help_text

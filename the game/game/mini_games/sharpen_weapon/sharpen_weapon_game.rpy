@@ -67,4 +67,4 @@ screen sharpen_weapon_screen(sharpen_weapon):
         text_size 40
         text_color "#ffcc33"
         text_bold True
-        action Show("minigame_help", help_text=game_data.task_data["sharpen_weapon"]["help_text"])
+        action Show("minigame_help", game=sharpen_weapon)

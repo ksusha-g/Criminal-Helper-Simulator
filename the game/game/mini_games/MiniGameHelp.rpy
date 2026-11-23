@@ -1,4 +1,4 @@
-screen minigame_help(help_text):
+screen minigame_help(game):
     modal True
     zorder 100
 
@@ -21,7 +21,7 @@ screen minigame_help(help_text):
                 color "#222222"
                 xalign 0.5
 
-            text help_text:
+            text '[game.get_help_text()]':
                 size 20
                 color "#030303"
                 xmaximum 500
