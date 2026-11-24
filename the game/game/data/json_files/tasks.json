@@ -1,7 +1,7 @@
 {
     "clean_weapon": {
         "minigame_type": "clean_weapon",
-        "payment": 100,
+        "payment": 10,
         "reputation": 5,
         "persuade": false,
         "help_text": "Возьмите тряпку и протрите оружие."
@@ -9,9 +9,17 @@
 
     "sharpen_weapon": {
         "minigame_type": "sharpen_weapon",
-        "payment": 150,
+        "payment": 14,
         "reputation": 10,
         "persuade": false,
         "help_text": "Соедините точки одной линией, не пересекая ее."
+    },
+
+    "alchemy": {
+        "minigame_type": "alchemy",
+        "payment": 20,
+        "reputation": 10,
+        "persuade": false,
+        "help_text": "Смешайте игредиенты в нужных пропорциях"
     }
 }

@@ -10,4 +10,6 @@ init python:
                 return CleanWeapon(task, CLEAN_WEAPON_AREA)
             elif task.minigame_type == "sharpen_weapon":
                 return SharpenWeapon(task, SHARPEN_WEAPON_AREA)
+            elif task.minigame_type == "alchemy":
+                return Alchemy(task)
             return None
