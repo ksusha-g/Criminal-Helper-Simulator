@@ -1,10 +1,15 @@
+
 init -10 python:
 
     class StoryCharacter:
-        def __init__(self, character_id, name, image):
+        def __init__(self, character_id, name, image, comments=None):
             self.character_id = character_id
             self.name = name
             self.image = image
+            self.comments = comments or {}
+
+        def get_comment(self, result):
+            return self.comments.get(result, '')
 
 
     class StoryEvent:

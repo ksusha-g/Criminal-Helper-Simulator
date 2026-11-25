@@ -1,11 +1,19 @@
-define ofela = Character("Офеля")
+define ofela = Character("Офеля",
+    screen='dialogs')
 define you = "Я"
+
 
 label ofela_day_1:
 
+    # Указываем, что сейчас идёт сюжетная встреча
+    $ is_story_encounter = True
+
+    # Получаем сюжетного персонажа из StoryManager
+    $ current_interaction_character = story_manager.characters["ofela"]
+
     scene background
 
-    show expression "sad_client" as character at client_size
+    show expression current_interaction_character.image as character at client_size
     show table
 
     show screen newspaper_screen
@@ -35,17 +43,20 @@ label ofela_day_1:
 
 
 label ofela_help_choice:
+
     menu:
+
         "Помочь":
             you "Умойся. Я очищу твой топор."
             ofela "Спасибо!!!"
-            
-            $ task = tasks[0]
+
+            # Получаем настоящий объект Task из GameData
+            $ task = game_data.tasks["clean_weapon"]
 
             jump start_task
 
         "Отказаться":
             $ ofela_helped = False
             ofela "😭😭😭 (("
-            $ game.current_day.statistics.add_refused_client()
-            return
+
+            jump finish_story_encounter

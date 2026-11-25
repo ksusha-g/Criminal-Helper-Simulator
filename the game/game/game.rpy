@@ -55,7 +55,9 @@ init python:
             
             return False
 
-        def apply_task_result(self, task, result):
+        
+        def apply_task_result(self, task, result, count_as_client=True):
+
             if result == MiniGameResult.GOOD:
                 self.player.earn(task.payment)
                 self.player.change_reputation(task.reputation)
@@ -65,11 +67,15 @@ init python:
 
             elif result == MiniGameResult.MEDIUM:
                 self.player.earn(task.payment // 2)
+
                 self.current_day.statistics.add_money(task.payment // 2)
 
             elif result == MiniGameResult.BAD:
                 self.player.change_reputation(-(task.reputation // 2))
+
                 self.current_day.statistics.add_reputation(-(task.reputation // 2))
 
-            self.current_day.statistics.add_served_client()
+            if count_as_client:
+                self.current_day.statistics.add_served_client()
+
                 

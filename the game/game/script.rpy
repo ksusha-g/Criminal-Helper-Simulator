@@ -4,7 +4,7 @@ transform client_size:
     xalign 0.5
 
 define e = Character(
-    'game.current_day.current_client.name',
+    'current_interaction_character.name',
     dynamic=True,
     color="#000000",
     screen='dialogs'
@@ -28,6 +28,10 @@ default screen_name = None
 default story_manager = None
 default story_event_completed = {}
 default today_events = []
+
+default current_interaction_character = None
+default is_story_encounter = False
+default current_story_event = None
 
 
 label start:
@@ -88,7 +92,7 @@ label run_story_events:
             story_event_completed
         )
 
-    jump client_interaction
+    return
 
 label finish_day:
 
@@ -106,23 +110,26 @@ label finish_day:
 
 label client_interaction:
 
+    $ is_story_encounter = False
+    $ current_interaction_character = game.current_day.current_client
+
     scene background
 
-    show expression game.current_day.current_client.image as character at client_size
+    show expression current_interaction_character.image as character at client_size
     show table
     show screen newspaper_screen
     show screen states
 
-    e '[game.current_day.current_client.phrase]'
+    e '[current_interaction_character.phrase]'
 
     menu:
 
         "Помочь":
-            $ task = game.current_day.current_client.tasks[0]
+            $ task = current_interaction_character.tasks[0]
             jump start_task
 
         "Отказать":
-            e '[game.current_day.current_client.reject]'
+            e '[current_interaction_character.reject]'
             $ game.current_day.statistics.add_refused_client()
             jump next_client
 
@@ -174,13 +181,20 @@ label task_result:
 
     if result == MiniGameResult.BAD:
 
-        e '[game.current_day.current_client.get_comment("bad")]'
+        e '[current_interaction_character.get_comment("bad")]'
 
         menu:
 
-            "Вернуться к прилавку":
+            "Вернуться":
 
-                $ game.apply_task_result(task, result)
+                $ game.apply_task_result(
+                    task,
+                    result,
+                    not is_story_encounter
+                )
+
+                if is_story_encounter:
+                    jump finish_story_encounter
 
                 jump next_client
 
@@ -191,35 +205,57 @@ label task_result:
 
     elif result == MiniGameResult.MEDIUM:
 
-        e '[game.current_day.current_client.get_comment("medium")]'
+        e '[current_interaction_character.get_comment("medium")]'
 
         menu:
 
-            "Вернуться к прилавку":
+            "Вернуться":
 
-                $ game.apply_task_result(task, result)
+                $ game.apply_task_result(
+                    task,
+                    result,
+                    not is_story_encounter
+                )
+
+                if is_story_encounter:
+                    jump finish_story_encounter
 
                 jump next_client
 
 
     elif result == MiniGameResult.GOOD:
 
-        e '[game.current_day.current_client.get_comment("good")]'
+        e '[current_interaction_character.get_comment("good")]'
 
         menu:
 
-            "Вернуться к прилавку":
+            "Вернуться":
 
-                $ game.apply_task_result(task, result)
+                $ game.apply_task_result(
+                    task,
+                    result,
+                    not is_story_encounter
+                )
+
+                if is_story_encounter:
+                    jump finish_story_encounter
 
                 jump next_client
 
 
-    # НОВОЕ: защита от неожиданного результата
     else:
 
         'Не удалось определить результат мини-игры.'
 
+        if is_story_encounter:
+            jump finish_story_encounter
+
         jump client_interaction
+        
+
+label finish_story_encounter:
+
+    $ is_story_encounter = False
+    $ current_interaction_character = None
 
     return
