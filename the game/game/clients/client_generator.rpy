@@ -13,12 +13,3 @@ init python:
                 result.append(client)
 
             return result
-
-
-
-
-
-
-
-
-
