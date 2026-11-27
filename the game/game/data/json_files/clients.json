@@ -28,20 +28,5 @@
             "sharpen_weapon",
             "clean_weapon"
         ]
-    },
-
-    {
-        "name": "Офеля",
-        "image": "sad_client.png",
-        "phrase": "Я кое-что натворил...(",
-        "reject": "Жаль.. Пока.",
-        "comments": {
-            "bad": "Как-то дорого за такой результат... Я не могу заплатить за это.",
-            "medium": "Спасибо.",
-            "good": "Ты крутой. До встречи"
-        },
-        "tasks": [
-            "clean_weapon"
-        ]
     }
 ]

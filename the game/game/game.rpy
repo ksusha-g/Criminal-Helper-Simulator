@@ -76,6 +76,4 @@ init python:
                 self.current_day.statistics.add_reputation(-(task.reputation // 2))
 
             if count_as_client:
-                self.current_day.statistics.add_served_client()
-
-                
+                self.current_day.statistics.add_served_client()             

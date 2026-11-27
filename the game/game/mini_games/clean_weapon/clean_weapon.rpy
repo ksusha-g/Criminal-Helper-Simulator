@@ -8,7 +8,7 @@ init python:
             self.dirty_weapon = 1.0 #полностью грязное оружие
             self.clean_progress = 0.0 # прогресс очистки, 1.0 - полностью чисты
             self.mouse_pressed = False #держит ли тряпку мышкой
-            self.clean_amount = 0.002 #очистка за один вызов (в илеале 0.0008)
+            self.clean_amount = 0.008 #очистка за один вызов (в илеале 0.0008)
 
             self.axe_image = Image("dirty_axe.png")
             self.weapon_width, self.weapon_height = renpy.image_size(

@@ -10,4 +10,7 @@ init python:
             self.tasks = tasks  #список доступных заданий
 
         def get_comment(self, result):
+            if isinstance(result, MiniGameResult):
+                result = result.name.lower()
+
             return self.comments.get(result, '')

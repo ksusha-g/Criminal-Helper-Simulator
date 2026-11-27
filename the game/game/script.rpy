@@ -31,7 +31,10 @@ default today_events = []
 
 default current_interaction_character = None
 default is_story_encounter = False
+default story_flags = {}
+default current_story_comments = {}
 default current_story_event = None
+
 
 
 label start:
@@ -69,7 +72,9 @@ label new_day:
     if not day_started:
         jump close_market
 
+    window hide
     'Начался день [game.day_number]'
+    window hide
 
     call run_story_events
 
@@ -85,12 +90,29 @@ label run_story_events:
     while today_events:
         $ current_story_event = today_events.pop(0)
 
+        $ current_interaction_character = story_manager.characters[
+            current_story_event.character_id
+        ]
+
+        $ current_story_comments = current_story_event.comments
+        $ is_story_encounter = True
+
+        # Временная отладка
+        $ print("EVENT:", current_story_event.event_id)
+        $ print("EVENT COMMENTS:", current_story_event.comments)
+        $ print("CURRENT COMMENTS:", current_story_comments)
+
         call expression current_story_event.label
 
         $ story_manager.complete_event(
             current_story_event,
             story_event_completed
         )
+
+        $ current_story_comments = {}
+        $ current_story_event = None
+        $ current_interaction_character = None
+        $ is_story_encounter = False
 
     return
 
@@ -178,10 +200,16 @@ label start_task:
 
 #НОВОЕ: отдельный label для обработки результатов, чтобы не дублировать одинаковую логику
 label task_result:
+    scene background
+
+    show expression current_interaction_character.image as character at client_size
+    show table
+    show screen newspaper_screen
+    show screen states
 
     if result == MiniGameResult.BAD:
 
-        e '[current_interaction_character.get_comment("bad")]'
+        e '[get_interaction_comment(current_interaction_character, "bad", current_story_comments)]'
 
         menu:
 
@@ -194,6 +222,11 @@ label task_result:
                 )
 
                 if is_story_encounter:
+                    $ story_manager.apply_result(
+                        current_story_event.event_id,
+                        result,
+                        story_flags
+                    )
                     jump finish_story_encounter
 
                 jump next_client
@@ -205,7 +238,7 @@ label task_result:
 
     elif result == MiniGameResult.MEDIUM:
 
-        e '[current_interaction_character.get_comment("medium")]'
+        e '[get_interaction_comment(current_interaction_character, "medium", current_story_comments)]'
 
         menu:
 
@@ -218,6 +251,11 @@ label task_result:
                 )
 
                 if is_story_encounter:
+                    $ story_manager.apply_result(
+                        current_story_event.event_id,
+                        result,
+                        story_flags
+                    )
                     jump finish_story_encounter
 
                 jump next_client
@@ -225,7 +263,7 @@ label task_result:
 
     elif result == MiniGameResult.GOOD:
 
-        e '[current_interaction_character.get_comment("good")]'
+        e '[get_interaction_comment(current_interaction_character, "good", current_story_comments)]'
 
         menu:
 
@@ -238,6 +276,11 @@ label task_result:
                 )
 
                 if is_story_encounter:
+                    $ story_manager.apply_result(
+                        current_story_event.event_id,
+                        result,
+                        story_flags
+                    )
                     jump finish_story_encounter
 
                 jump next_client
@@ -254,8 +297,4 @@ label task_result:
         
 
 label finish_story_encounter:
-
-    $ is_story_encounter = False
-    $ current_interaction_character = None
-
     return

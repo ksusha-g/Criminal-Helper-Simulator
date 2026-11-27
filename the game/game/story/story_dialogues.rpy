@@ -8,8 +8,6 @@ label ofela_day_1:
     # Указываем, что сейчас идёт сюжетная встреча
     $ is_story_encounter = True
 
-    # Получаем сюжетного персонажа из StoryManager
-    $ current_interaction_character = story_manager.characters["ofela"]
 
     scene background
 
@@ -22,10 +20,10 @@ label ofela_day_1:
     ofela "Привет..."
     ofela "Я кое-что натворил...("
 
+    window hide
     menu:
         "Что случилось?":
-            ofela "Ну..."
-            ofela "Я нес топорик домой... Ну в смысле к себе..."
+            ofela "Ну... Я нес топорик домой... В смысле, к себе домой..."
             ofela "И там, ну, так вышло..."
             ofela "Ты не поверишь."
             ofela "Я подскользнулся."
@@ -43,7 +41,7 @@ label ofela_day_1:
 
 
 label ofela_help_choice:
-
+    window hide
     menu:
 
         "Помочь":
